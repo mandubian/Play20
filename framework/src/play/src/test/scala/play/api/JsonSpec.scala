@@ -55,7 +55,6 @@ object JsonSpec extends Specification {
       "body" -> JsString(p.body))) // Don't care about creating created_at or not here
   }
 
-
   "JSON" should {
     "serialize and desarialize maps properly" in {
       val c = Car(1, Map("ford" -> "1954 model"))
@@ -126,8 +125,19 @@ object JsonSpec extends Specification {
     "Can parse multiple JsPath to Tuple2[String, String]" in {
       val postJson = """{ "foo1": { "foo11" : "bar11", "foo12": "bar12" }, "foo2": "bar2" }"""  
       val parsedJson = Json.parse(postJson)
-      val (foo1, foo2) = parsedJson.as[String, String](ROOT\"foo1"\"foo12", ROOT\"foo2")
+      val (foo1, foo2) = parsedJson.as[String, String](ROOT \ "foo1" \ "foo12", ROOT \ "foo2")
       (foo1, foo2) must equalTo(("bar12", "bar2"))
+    }
+
+    "Can simplify Format creation" in {
+      case class Thing(alpha: String, beta: Int, gamma: List[String])
+
+      implicit def ThingFormat = asProduct3("alpha", "beta", "gamma")(Thing)(Thing.unapply(_).get)  
+
+      val postJson = """{ "alpha" : "chboing", "beta" : 123456, "gamma": [ "foo1", "foo2" ] }"""  
+      val parsedJson = Json.parse(postJson)
+      val thing = parsedJson.as[Thing]
+      thing must equalTo(Thing("chboing", 123456, List("foo1", "foo2")))
     }
 
     "Parse Tuple2 from JsObject" >> {

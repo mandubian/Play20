@@ -51,7 +51,7 @@ sealed trait JsValue {
   def as[T1, T2](f1:JsPath, f2:JsPath)(implicit fmt1: Reads[T1], fmt2: Reads[T2]): (T1, T2) = ( fromJson(f1.resolve(this))(fmt1), fromJson(f2.resolve(this))(fmt2) )  
 
   override def toString = Json.stringify(this)
-
+      
 }
 
 case object JsNull extends JsValue
