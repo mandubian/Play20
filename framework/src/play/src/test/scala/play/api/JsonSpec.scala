@@ -140,6 +140,21 @@ object JsonSpec extends Specification {
       thing must equalTo(Thing("chboing", 123456, List("foo1", "foo2")))
     }
 
+    "Can simplify Format creation2" in {
+      case class Thing3(alpha: String, beta: Int, gamma: List[String])
+      case class Thing2(alpha: String, beta: Int)
+
+      implicit def Thing3Format = buildFormatter3("alpha", "beta", "gamma")(Thing3)(Thing3)
+      implicit def Thing2Format = buildFormatter2("alpha", "beta")(Thing2.apply)(Thing2.unapply)
+
+      val postJson = """{ "alpha" : "chboing", "beta" : 123456, "gamma": [ "foo1", "foo2" ] }"""  
+      val parsedJson = Json.parse(postJson)
+      val thing3 = parsedJson.as[Thing3]
+      val thing2 = parsedJson.as[Thing3]
+      thing3 must equalTo(Thing2("chboing", 123456, List("foo1", "foo2")))
+      thing2 must equalTo(Thing2("chboing", 123456))
+    }
+
     "Parse Tuple2 from JsObject" >> {
       "With at least 2 fields (String, Boolean)" in {
         val postJson = """{ "foo1":"bar1", "foo2": true }"""
