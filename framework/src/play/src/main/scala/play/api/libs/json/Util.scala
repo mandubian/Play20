@@ -2,9 +2,22 @@ package play.api.libs.json.util
 
 class FunctorOps[M[_],A](ma:M[A])(implicit fu:Functor[M]){
 
-  def fmap[B](f: A => B):M[B] = fu.fmap(ma,f)
+  def fmap[B](f: A => B):M[B] = fu.fmap(ma, f)
 
 }
+
+class ContravariantFunctorOps[M[_],A](ma:M[A])(implicit fu:ContravariantFunctor[M]){
+
+  def contramap[B](f: B => A):M[B] = fu.contramap(ma, f)
+
+}
+
+class InvariantFunctorOps[M[_],A](ma:M[A])(implicit fu:InvariantFunctor[M]){
+
+  def inmap[B](f: A => B, g: B => A):M[B] = fu.inmap(ma, f, g)
+
+}
+
 
 class ApplicativeOps[M[_],A](ma:M[A])(implicit a:Applicative[M]){
 
@@ -26,6 +39,13 @@ class FunctionalBuilderOps[M[_],A](ma:M[A])(implicit fcb:FunctionalCanBuild[M]){
   }
 
   def and[B](mb:M[B]):FunctionalBuilder[M]#CanBuild2[A,B] = this.~(mb)
+
+  /*def apply[B](f: (A) => B)(implicit fu:Functor[M]):M[B] = fu.fmap[A, B](ma, f)
+
+  def apply[B](f: B => A)(implicit fu:ContravariantFunctor[M]):M[B] = fu.contramap(ma, f)
+
+  def apply[B](f1: A => B, f2: B => A)(implicit fu:InvariantFunctor[M]):M[B] = fu.inmap[A, B](ma, f1, f2)*/
+
 }
 
 trait Applicative[M[_]]{
@@ -79,6 +99,11 @@ trait ContravariantFunctor[M[_]] extends Variant[M]{
 
 }
 
+trait Monoid[A] {
+  def append(a1: A, a2: A): A
+  def identity: A
+}
+
 case class ~[A,B](_1:A,_2:B)
 
 class FunctionalBuilder[M[_]](canBuild:FunctionalCanBuild[M]){
@@ -103,6 +128,9 @@ class FunctionalBuilder[M[_]](canBuild:FunctionalCanBuild[M]){
 
     def join[A >: A1](implicit witness1: <:<[A, A1], witness2: <:<[A, A2], fu: ContravariantFunctor[M]): M[A] = 
       apply[A]( (a: A) => (a: A1, a: A2) )(fu)
+
+    def append[A >: A1](implicit witness1: <:<[A1, A], witness2: <:<[A2, A], fu: Functor[M], m: Monoid[A]): M[A] = 
+      apply[A]( (a1: A1, a2: A2) => m.append(a1: A, a2: A) )(fu)
 
     def tupled(implicit v:Variant[M]): M[(A1, A2)] = 
       // SO UGLY UGLY UGLY workaround for unchecked type erasure warning... no cleaner way found...
@@ -706,6 +734,10 @@ object `package` {
     def apply[A,B](mf:Option[A => B], ma: Option[A]):Option[B] = mf.flatMap(f => ma.map(f))
 
   }
+
+  implicit def toFunctorOps[M[_], A](ma: M[A])(implicit fu: Functor[M]): FunctorOps[M, A] = new FunctorOps(ma)
+  implicit def toContraFunctorOps[M[_], A](ma: M[A])(implicit fu: ContravariantFunctor[M]): ContravariantFunctorOps[M, A] = new ContravariantFunctorOps(ma)
+  implicit def toInvariantFunctorOps[M[_], A](ma: M[A])(implicit fu: InvariantFunctor[M]): InvariantFunctorOps[M, A] = new InvariantFunctorOps(ma)
 
   def unapply[B, A](f: B => Option[A]) = { b: B => f(b).get }
 
