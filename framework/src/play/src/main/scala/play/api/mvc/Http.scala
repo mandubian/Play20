@@ -317,8 +317,11 @@ package play.api.mvc {
     /**
      * Optionally returns the first header value associated with a key.
      */
-    def get(key: String): Option[String] = getAll(key).headOption
-
+    def get(key: String): Option[String] = {
+      data.collectFirst{ 
+        case(k, values) if(k.compareToIgnoreCase(key) == 0) => values
+      }.flatMap(_.headOption)
+    }
     /**
      * Retrieves the first header value which is associated with the given key.
      */
@@ -327,7 +330,11 @@ package play.api.mvc {
     /**
      * Retrieve all header values associated with the given key.
      */
-    def getAll(key: String): Seq[String] = (toMap.get(key): Option[Seq[String]]).toSeq.flatten
+    def getAll(key: String): Seq[String] = {
+      data.collect{ 
+        case(k, values) if(k.compareToIgnoreCase(key) == 0) => values
+      }.flatten
+    }
 
     /**
      * Retrieve all header keys
